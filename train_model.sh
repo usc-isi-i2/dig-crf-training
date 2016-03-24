@@ -12,6 +12,7 @@ OUTDIR=$(mktemp -d -p outputs)
 TRAIN_JSON="$OUTDIR/training.json"
 TRAIN_LABELS="$OUTDIR/training.labeled"
 TRAIN_FEATS=$OUTDIR/training.feats
+TEMPLATES=$OUTDIR/dig-crf.templates
 LOG_FILE="$OUTDIR/log.txt"
 
 # The result file in OUTDIR
@@ -20,8 +21,8 @@ MODEL=$OUTDIR/training.model
 
 # The input files which are constant for all invocations.
 
-FEAT_LIST="features.hair-eye"
-TEMPLATES=dig-hair-eye-train.templates
+FEAT_LIST=dig-crf.feat-list
+
 
 # Flag arguments to the different components.  
 
@@ -40,7 +41,7 @@ python -u json_to_name_annotations.py --inputs $TRAIN_JSON --output $TRAIN_LABEL
 
 # Featurize the name annotations
 
-python -u crf_features.py --input $TRAIN_LABELS --output $TRAIN_FEATS $FEAT_FLAGS &>>$LOG_FILE
+python -u crf_features.py --input $TRAIN_LABELS --output $TRAIN_FEATS --templates $TEMPLATES $FEAT_FLAGS &>>$LOG_FILE
 
 # Train the model on the features
 
