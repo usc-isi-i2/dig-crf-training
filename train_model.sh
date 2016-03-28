@@ -26,7 +26,7 @@ TRAIN_FLAGS="-f 1 -a CRF-L2"
 
 # Make a unique output directory for this invocation
 
-OUTDIR=$(mktemp -d -p output)
+OUTDIR=$(mktemp -d -p outputs)
 
 # The intermediate files in OUTDIR
 
