@@ -1,13 +1,13 @@
-import json
+import json as JSON
 import codecs
 from argparse import ArgumentParser
-from sys import stdout,stdin
+from sys import stdout,stdin,stderr
 
 scriptArgs = ArgumentParser()
-scriptArgs.add_argument("--inputs",nargs='*',help="File containing a JSON list of JSON annotation objects")
-scriptArgs.add_argument("--output",help="Output file which will have lines <token><tab><label>, one token/label pair per line")
+scriptArgs.add_argument("--inputs",nargs='*',help="File containing a JSON list of JSON annotation objects.")
+scriptArgs.add_argument("--output",help="Output file which will have lines <token><tab><label>, one token/label pair per line.")
 scriptArgs.add_argument("--iob",action='store_true',help="Add 'B_' and 'I_' prefixes to name labels for IOB annotation, vs. the default IO.")
-scriptArgs.add_argument("--nametypes",help="Entity types to look for, comma-separated")
+scriptArgs.add_argument("--nametypes",help="List of entity types to restrict to, comma-separated.  Optional; not really needed anymore.")
 
 argValues = scriptArgs.parse_args()
 
@@ -19,7 +19,7 @@ onlyTypes  = None
 if (argValues.nametypes is not None):
     onlyTypes = set(argValues.nametypes.split(","))
 
-nameTypes = set()
+outputNameTypes = set()
 
 # Not using these right now
 excludeTokens = set("&lt;br&gt; &lt;br/&gt; &amp; &amp;#039; &lt;/a&gt;".split())
@@ -27,24 +27,35 @@ excludeTokens = set("&lt;br&gt; &lt;br/&gt; &amp; &amp;#039; &lt;/a&gt;".split()
 ##############################################################
 
 def main ():
-    # nonOverlapping(inputFiles,[outputFile])
+    nonOverlapping(inputFiles,[outputFile])
     if (outputFile is not None):
         outstream = codecs.open(outputFile,"wb","utf-8")
     else:
         outstream = stdout
     if (inputFiles):
         for inputFile in inputFiles:
-            instream = codecs.open(inputFile,"rb","utf-8")
-            processJSONForms(instream,outstream)
-            instream.close()
+            processJSONFile(inputFile,outstream)
     else:
-        processJSONForms(stdin,outstream)
+        processJSONStream(stdin,outstream)
     if (outstream != stdout):
         outstream.close()
-    print "Name types found:"," ".join(nameTypes),"\n"
+    stderr.write("\nName types found: %s\n" % " ".join(outputNameTypes))
 
-def processJSONForms (instream,outstream):
-    forms = json.load(instream)
+def processJSONFile (inputFile,outstream):
+    """Takes a file containing a JSON list, and and an output stream."""
+    instream = codecs.open(inputFile,"rb","utf-8")
+    processJSONStream(instream,outstream)
+    instream.close()
+
+def processJSONStream (instream,outstream):
+    """Takes an input stream, on which a JSON list is assumed to be, and an output stream.
+       Generates the annotation from the JSON list and writes it to outputstream."""
+    forms = JSON.load(instream)
+    processJSONForms(forms,outstream)
+
+def processJSONForms (forms,outstream):
+    """Takes a JSON list, and an output stream.  Generates the annotation from the JSON list
+       and writes it to the output stream."""
     assert(type(forms) == list)
     # print("%d forms" % len(forms))
     for form in forms:
@@ -79,9 +90,8 @@ def processJSONForms (instream,outstream):
                 entity.end    = end
                 entity.tokens = sentTokens[start:end+1]
                 entity.string = " ".join(entity.tokens)
-                # assert(entity.tokens == annotTokens)
                 entities.append(entity)
-                nameTypes.add(labelType)
+                outputNameTypes.add(labelType)
         # Generate labels for them and print them out one per line
         labels = generateLabelsForSentence(sentTokens,entities)
         # Don't filter right now 
@@ -103,7 +113,6 @@ def processJSONForms (instream,outstream):
             # outstream.write("\n")
         # Last line must be empty with newline.     
         outstream.write("\n")
-    instream.close()
 
 def fixToken (token):
     hasWhite = False
@@ -163,6 +172,8 @@ def split (strg,sep=" "):
 
 def nonOverlapping (files1, files2):
     """Takes two lists of files; raises an exception if they overlap."""
+    if (files1 is None or files2 is None):
+        return
     for file1 in files1:
         for file2 in files2:
             if (file1 != None and file2 != None and file1 == file2):
