@@ -1,7 +1,6 @@
-# The input file
+# Inputs: Input file and prefix for result URL 
 
 INPUT=$1
-
 URL_PREFIX=$2
 
 # Codes for HTTP response. 
@@ -9,9 +8,13 @@ URL_PREFIX=$2
 SUCCESS_CODE=200
 FAILURE_CODE=400
 
+# Directory for scripts, code, and script data files
+
+BIN=bin
+
 # The input feature-specification file which is constant for all invocations, currently.
 
-FEAT_LIST=bin/dig-crf.feat-list
+FEAT_LIST=$BIN/dig-crf.feat-list
 
 
 # Flag arguments to the different components.  
@@ -46,11 +49,11 @@ cp $INPUT $TRAIN_JSON &>>$LOG_FILE
 
 # Convert the JSON into name annotations
 
-python -u bin/json_to_name_annotations.py --inputs $TRAIN_JSON --output $TRAIN_LABELS $LABEL_FLAGS &>>$LOG_FILE
+python -u $BIN/json_to_name_annotations.py --inputs $TRAIN_JSON --output $TRAIN_LABELS $LABEL_FLAGS &>>$LOG_FILE
 
 # Featurize the name annotations
 
-python -u bin/crf_features.py --input $TRAIN_LABELS --output $TRAIN_FEATS --templates $TEMPLATES $FEAT_FLAGS &>>$LOG_FILE
+python -u $BIN/crf_features.py --input $TRAIN_LABELS --output $TRAIN_FEATS --templates $TEMPLATES $FEAT_FLAGS &>>$LOG_FILE
 
 # Train the model on the features
 
